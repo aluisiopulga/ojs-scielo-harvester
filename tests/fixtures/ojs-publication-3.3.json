@@ -1,0 +1,13 @@
+{
+  "id": 300,
+  "datePublished": "2024-11-02 00:00:00",
+  "title": {"pt_BR": "Educação a distância no ensino técnico", "en_US": "Distance learning in technical education"},
+  "abstract": {"pt_BR": "<p>Resumo em português.</p>", "en_US": "<p>English abstract.</p>"},
+  "keywords": {"pt_BR": ["educação", "ensino técnico"], "en_US": ["education"]},
+  "authors": [
+    {"givenName": {"pt_BR": "Carla"}, "familyName": {"pt_BR": "Mendes"}}
+  ],
+  "pub-id::doi": "10.0000/example.2024.300",
+  "galleys": [],
+  "references": ["Ref one.", "Ref two."]
+}

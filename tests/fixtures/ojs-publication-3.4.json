@@ -1,0 +1,17 @@
+{
+  "id": 501,
+  "datePublished": "2025-03-10",
+  "title": {"pt_BR": "", "en": "Open data in public health research", "es": "Datos abiertos en salud pública"},
+  "abstract": {"pt_BR": "<p></p>", "en": "<p>We describe an <strong>open data</strong> workflow.</p>"},
+  "keywords": {"en": [{"name": "open data"}, {"name": "repositories"}, {"name": ""}]},
+  "authors": [
+    {"givenName": {"en": "Maria"}, "familyName": {"en": "Oliveira"}},
+    {"givenName": {"pt_BR": "João"}, "familyName": {"pt_BR": "Pereira"}}
+  ],
+  "doiObject": {"doi": "10.0000/example.2025.501"},
+  "galleys": [
+    {"label": "HTML", "urlPublished": "https://journals.example.org/index.php/jhs/article/view/77/120"},
+    {"label": "PDF (English)", "urlPublished": "https://journals.example.org/index.php/jhs/article/view/77/121"}
+  ],
+  "citationsRaw": "<span style=\"color:red\">Doe J. Example reference. 2020.</span>"
+}
