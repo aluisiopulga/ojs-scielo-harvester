@@ -1,0 +1,40 @@
+{
+    "name": "aluisiopulga/ojs-scielo-harvester",
+    "description": "Harvests article metadata from OJS (REST API) and SciELO journals into a deduplicated, Drupal Feeds-ready CSV.",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "keywords": ["ojs", "scielo", "harvester", "drupal", "feeds", "scholarly-publishing", "metadata", "csv"],
+    "authors": [
+        {
+            "name": "Aluisio Ricardo Marques Pulga",
+            "homepage": "https://www.linkedin.com/in/aluisiopulga/"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "JournalHarvester\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JournalHarvester\\Tests\\": "tests/"
+        }
+    },
+    "bin": ["bin/harvest"],
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
