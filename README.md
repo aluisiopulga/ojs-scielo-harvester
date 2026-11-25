@@ -62,7 +62,7 @@ export OJS_TOKEN_JHS="eyJ0eXAiOiJKV1Qi..."
 Check that every token and site works before harvesting:
 
 ```bash
-bin/harvest check
+php bin/harvest check
 ```
 
 ```
@@ -74,16 +74,16 @@ bin/harvest check
 Harvest the latest two years (the default, ideal for a nightly cron job):
 
 ```bash
-bin/harvest run
+php bin/harvest run
 ```
 
 Other options:
 
 ```bash
-bin/harvest run --years=1                       # only the latest year
-bin/harvest run --from=2018 --to=2025           # a fixed range (first full import)
-bin/harvest run --only=ojs --journal=jhs        # a single journal
-bin/harvest run --output=/var/feeds/articles.csv
+php bin/harvest run --years=1                       # only the latest year
+php bin/harvest run --from=2018 --to=2025           # a fixed range (first full import)
+php bin/harvest run --only=ojs --journal=jhs        # a single journal
+php bin/harvest run --output=/var/feeds/articles.csv
 ```
 
 ## Output
@@ -124,7 +124,7 @@ duplicating them.
 ## Project structure
 
 ```
-bin/harvest                 CLI entry point (run, check)
+bin/harvest                     CLI entry point (run, check)
 config/journals.example.php Example configuration
 src/
   Http/                     cURL client with TLS, throttling and retries
