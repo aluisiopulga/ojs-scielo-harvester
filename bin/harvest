@@ -1,0 +1,130 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * ojs-scielo-harvester command line.
+ *
+ *   bin/harvest run   [--config=config/journals.php] [--output=output/articles.csv]
+ *                     [--years=2 | --from=2023 --to=2025] [--only=ojs|scielo] [--journal=code]
+ *   bin/harvest check [--config=...]      Checks OJS tokens and SciELO access, harvests nothing.
+ */
+
+use JournalHarvester\Config;
+use JournalHarvester\Ojs\OjsClient;
+use JournalHarvester\Ojs\OjsHarvester;
+use JournalHarvester\Output\CsvWriter;
+use JournalHarvester\Scielo\ScieloHarvester;
+use JournalHarvester\Scielo\ScieloParser;
+use JournalHarvester\Support\YearFilter;
+
+foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This tool runs from the command line only.\n");
+}
+
+ini_set('memory_limit', '1024M');
+set_time_limit(0);
+
+// getopt() stops at the first non-option argument (the command), so parse --key=value by hand.
+$command = 'help';
+$options = [];
+foreach (array_slice($argv, 1) as $arg) {
+    if (preg_match('/^--([a-z]+)=(.*)$/', $arg, $m)) {
+        $options[$m[1]] = $m[2];
+    } elseif (!str_starts_with($arg, '-')) {
+        $command = $arg;
+    } else {
+        fwrite(STDERR, "Unknown option: {$arg} (use --name=value)\n");
+        exit(1);
+    }
+}
+$root = dirname(__DIR__);
+
+if (!in_array($command, ['run', 'check'], true)) {
+    fwrite(STDOUT, <<<TXT
+    Usage:
+      bin/harvest run   [--config=FILE] [--output=FILE] [--years=N | --from=YYYY --to=YYYY]
+                        [--only=ojs|scielo] [--journal=CODE]
+      bin/harvest check [--config=FILE]
+
+    Defaults: --config=config/journals.php, --output=output/articles-<date>.csv, --years=2
+    TXT . "\n");
+    exit($command === 'help' ? 0 : 1);
+}
+
+try {
+    $config = Config::load($options['config'] ?? "{$root}/config/journals.php");
+} catch (Throwable $e) {
+    fwrite(STDERR, "Error: {$e->getMessage()}\n");
+    exit(1);
+}
+
+$only = $options['only'] ?? null;
+$journalFilter = $options['journal'] ?? null;
+$ojsJournals = $only === 'scielo' ? [] : array_filter($config->ojs, fn ($j) => $journalFilter === null || $j->code === $journalFilter);
+$scieloJournals = $only === 'ojs' ? [] : array_filter($config->scielo, fn ($j) => $journalFilter === null || $j->acronym === $journalFilter);
+$cookieDir = sys_get_temp_dir();
+
+// ---------------------------------------------------------------- check
+if ($command === 'check') {
+    $failures = 0;
+    foreach ($ojsJournals as $journal) {
+        $result = (new OjsClient($config->httpClient(), $journal))->checkAccess();
+        $failures += $result['ok'] ? 0 : 1;
+        printf("[%s] OJS    %-8s %s\n", $result['ok'] ? 'OK' : '!!', $journal->code, $result['detail']);
+    }
+    foreach ($scieloJournals as $journal) {
+        $http = $config->httpClient("{$cookieDir}/scielo-{$journal->acronym}.cookies");
+        $grid = $http->get($journal->gridUrl());
+        $issues = $grid->ok() ? ScieloParser::issueLinks($grid->body, $journal) : [];
+        $ok = $issues !== [];
+        $failures += $ok ? 0 : 1;
+        $detail = $ok ? count($issues) . ' issues found' : "HTTP {$grid->status} " . ($grid->error ?: 'no issues found in grid');
+        printf("[%s] SciELO %-8s %s\n", $ok ? 'OK' : '!!', $journal->acronym, $detail);
+    }
+    exit($failures > 0 ? 2 : 0);
+}
+
+// ---------------------------------------------------------------- run
+$years = new YearFilter(
+    latestYears: (int) ($options['years'] ?? 2),
+    from: isset($options['from']) ? (int) $options['from'] : null,
+    to: isset($options['to']) ? (int) $options['to'] : null,
+);
+$output = $options['output'] ?? "{$root}/output/articles-" . date('Y-m-d_His') . '.csv';
+$writer = new CsvWriter($output);
+$dot = static function (string $s): void { fwrite(STDOUT, $s); };
+
+fwrite(STDOUT, ">>> Writing {$output}\n");
+
+foreach ($ojsJournals as $journal) {
+    fwrite(STDOUT, "OJS    {$journal->name} ");
+    $client = new OjsClient($config->httpClient(), $journal);
+    $count = (new OjsHarvester($client, $journal, $years, $dot))->harvest($writer);
+    fwrite(STDOUT, " ({$count})\n");
+    foreach ($client->warnings() as $warning) {
+        fwrite(STDERR, "   warning: {$warning}\n");
+    }
+}
+
+foreach ($scieloJournals as $journal) {
+    fwrite(STDOUT, "SciELO {$journal->name} ");
+    $harvester = new ScieloHarvester($config->httpClient("{$cookieDir}/scielo-{$journal->acronym}.cookies"), $journal, $years, $dot);
+    $count = $harvester->harvest($writer);
+    fwrite(STDOUT, " ({$count})\n");
+    foreach ($harvester->warnings() as $warning) {
+        fwrite(STDERR, "   warning: {$warning}\n");
+    }
+}
+
+$writer->close();
+fwrite(STDOUT, "\nDone: {$writer->count()} articles in {$output}\n");
