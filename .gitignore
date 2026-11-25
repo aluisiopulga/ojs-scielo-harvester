@@ -1,0 +1,8 @@
+/vendor/
+/config/journals.php
+/output/*
+!/output/.gitkeep
+.phpunit.result.cache
+.phpunit.cache/
+.env
+*.cookies
